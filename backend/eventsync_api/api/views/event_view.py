@@ -1,4 +1,4 @@
-from core.models import Event, ThematicRoom
+from core.models import Event
 from django.http import Http404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -9,7 +9,6 @@ from rest_framework.views import APIView
 
 from ..permissions import IsOrganizerOrReadOnly
 from ..serializers.event_serializers import EventSerializer
-from ..serializers.thematic_room_serializers import ThematicRoomSerializer
 from ..utils.register import save_current_user_registration
 
 
@@ -68,16 +67,6 @@ class EventListView(APIView):
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(events, request)
         serializer = EventSerializer(result_page, many=True)
-
-        for event in result_page:
-            event_serializer = EventSerializer(event).data
-            thematic_rooms = ThematicRoom.objects.filter(event=event)
-            thematic_rooms_serializer = ThematicRoomSerializer(
-                thematic_rooms, many=True
-            ).data
-            event_serializer["thematic_rooms"] = thematic_rooms_serializer
-            serializer.append(event_serializer)
-
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
@@ -115,13 +104,8 @@ class EventDetailView(APIView):
     )
     def get(self, request, pk, format=None):
         event = self.get_object(pk)
-        event_serializer = EventSerializer(event).data
-        thematic_rooms = ThematicRoom.objects.filter(event=event)
-        thematic_rooms_serializer = ThematicRoomSerializer(
-            thematic_rooms, many=True
-        ).data
-        event_serializer["thematic_rooms"] = thematic_rooms_serializer
-        return Response(event_serializer)
+        serializer = EventSerializer(event)
+        return Response(serializer.data)
 
     @extend_schema(
         request=EventSerializer,
@@ -204,14 +188,6 @@ class UserOrganizedEventsView(APIView):
         paginator = self.pagination_class()
         result_page = paginator.paginate_queryset(events, request)
         serializer = EventSerializer(result_page, many=True)
-
-        for event in result_page:
-            event_serializer = EventSerializer(event).data
-            thematic_rooms = ThematicRoom.objects.filter(event=event)
-            thematic_rooms_serializer = ThematicRoomSerializer(thematic_rooms, many=True).data
-            event_serializer['thematic_rooms'] = thematic_rooms_serializer
-            serializer.append(event_serializer)
-
         return paginator.get_paginated_response(serializer.data)
 
 
